@@ -1,0 +1,4 @@
+<apex:page >
+    <apex:canvasApp developerName="Test_Canvas" scrolling="yes" 
+    parameters="{}"/>
+</apex:page>

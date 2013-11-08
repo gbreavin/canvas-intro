@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<script type="text/javascript" src="canvas-all.js">	</script>
+	</head>
+	
+	<body>    
+	
+	    <h1 id="header">Force.com Canvas OAuth App</h1>
+    	<div>
+	        access_token = <span id="oauth"></span>
+    	</div>
+	    <div>
+    	    <a id="login" href="#">Login</a><br/>
+        	<form>
+	        	Post an update: <input id="chatter-text" type="text">
+    	    	<a id="chatter" href="#">Post it!</a><br/>
+        	</form>
+	    </div>
+    
+        <script type="text/javascript">
+			var client;
+			var payload;
+
+	        // Bootstrap the page once the DOM is ready.
+    	    Sfdc.canvas(function() {
+        	    // On Ready...
+            	var login    = Sfdc.canvas.byId("login"),
+	            	chatter  = Sfdc.canvas.byId("chatter"),
+    	            loggedIn = Sfdc.canvas.oauth.loggedin(),
+        	        token = Sfdc.canvas.oauth.token();
+                
+            	login.innerHTML = (loggedIn) ? "Logout" : "Login";
+            
+	            if (loggedIn) {
+    	            // Only displaying part of the OAuth token for better formatting.
+        	        Sfdc.canvas.byId("oauth").innerHTML = Sfdc.canvas.oauth.token();
+            	    
+                	client = Sfdc.canvas.oauth.client();
+                
+	                chatter.onclick=postToChatter;
+    	            Sfdc.canvas.client.ctx(function(msg) {contextHandler(msg, client);}, client);
+        	    }
+            
+            	login.onclick=loginHandler;
+            
+        	});
+	
+	        function loginHandler(e) {
+    	        var uri;
+
+        	    if (! Sfdc.canvas.oauth.loggedin()) {
+            	
+            	    uri = Sfdc.canvas.oauth.loginUrl();
+                
+	                Sfdc.canvas.oauth.login(
+    	                {uri : uri,
+        	                params: {
+            	                response_type : "token",
+                	            client_id : "CONSUMER_KEY",
+                    	        redirect_uri : encodeURIComponent(
+                        	        "URL_FOR_CALLBACK _PAGE)
+                        	}
+                        });
+	            }
+	            else {
+    	            Sfdc.canvas.oauth.logout();
+        	        login.innerHTML = "Login";
+            	    Sfdc.canvas.byId("oauth").innerHTML = "";
+	            }
+    	        return false;
+        	}
+
+			function contextHandler(msg, c) {
+				console.log("msg", msg);
+				if(msg.status === 200) {
+					payload = msg.payload;
+				}
+			}
+
+			function postToChatter() {
+				var chatterPostURL = payload.links.chatterFeedsUrl + "/news/me/feed-items",
+					textToPost = Sfdc.canvas.byId("chatter-text").value,
+					body = {"body": { "messageSegments" : [{ "type" : "text", "text": textToPost}]}};
+			
+				Sfdc.canvas.client.ajax(
+						chatterPostURL,
+						{
+							client : client,
+							method : "POST",
+							contentType : "application/json",
+							data : JSON.stringify(body),
+							success : function(data) {
+								console.log("update was a success: ", data);
+								Sfdc.canvas.byId("chatter-text").value = "";
+							}
+						}
+					);
+			}
+    	</script>
+
+	</body>
+	
+</html>
